@@ -1,6 +1,6 @@
 name: "Elerix BMS Reader"
 description: "RS485 BMS data reader pro Elerix EX-S5 – FoxESS/PACE protokol, LV5200"
-version: "2.2.0"
+version: "2.3.0"
 slug: "elerix_bms_reader"
 url: "https://github.com/blesk89/elerix-bms-ha-addon"
 init: false
@@ -21,6 +21,7 @@ options:
     - addr: 2
       pack_num: 2
   interval: 30
+  nominal_capacity_ah: 100
 schema:
   port: str
   baudrate: int
@@ -28,3 +29,4 @@ schema:
     - addr: int
       pack_num: int
   interval: int
+  nominal_capacity_ah: int

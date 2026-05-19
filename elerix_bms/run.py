@@ -21,6 +21,7 @@ with open(OPTIONS_FILE) as f:
 PORT      = opts.get("port", "/dev/ttyUSB0")
 BAUDRATE  = opts.get("baudrate", 9600)
 INTERVAL  = opts.get("interval", 30)
+NOMINAL_CAPACITY_AH = opts.get("nominal_capacity_ah", 100)
 
 # Build PACKS list: [{addr, pack_num}]
 # New format: packs: [{addr: 2, pack_num: 1}, {addr: 2, pack_num: 2}]
@@ -52,6 +53,12 @@ SENSORS = [
     ("temp_min_c",       "Min. teplota",          "°C",  "temperature", "measurement"),
     ("warning_status",   "Varovný stav",          "",    None,          "measurement"),
     ("alarm_status",     "Alarmový stav",         "",    None,          "measurement"),
+    ("temp_bms_c",        "Teplota BMS desky",    "°C",  "temperature", "measurement"),
+    ("temp_dsg_mosfet_c", "Teplota DSG MOSFET",   "°C",  "temperature", "measurement"),
+    ("temp_chg_mosfet_c", "Teplota CHG MOSFET",   "°C",  "temperature", "measurement"),
+    ("io_status1",        "I/O Status 1",          "",    None,          "measurement"),
+    ("io_status2",        "I/O Status 2",          "",    None,          "measurement"),
+    ("afe_balance",       "Balancování článků",    "",    None,          "measurement"),
 ]
 
 
@@ -77,6 +84,10 @@ def post_sensor(entity_id: str, state, attributes: dict) -> None:
 
 
 def post_battery_sensors(data: dict, addr: int, pack_num: int = None) -> None:
+    # Compute SOH from full_capacity_ah and nominal capacity
+    if "full_capacity_ah" in data and NOMINAL_CAPACITY_AH > 0:
+        data["soh_pct"] = round(data["full_capacity_ah"] / NOMINAL_CAPACITY_AH * 100, 1)
+
     # Use pack_num as sensor suffix if set (multi-pack at same addr), else addr
     suffix = pack_num if pack_num is not None else addr
     prefix = f"elerix_bms_{suffix}"
