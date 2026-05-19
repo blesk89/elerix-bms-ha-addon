@@ -1,0 +1,29 @@
+name: "Elerix BMS Reader"
+description: "RS485 BMS data reader pro Elerix EX-S5 – FoxESS/PACE protokol, LV5200"
+version: "2.1.0"
+slug: "elerix_bms_reader"
+init: false
+uart: true
+homeassistant_api: true
+startup: "application"
+boot: "auto"
+arch:
+  - aarch64
+map:
+  - "config:ro"
+options:
+  port: "/dev/ttyUSB0"
+  baudrate: 9600
+  packs:
+    - addr: 2
+      pack_num: 1
+    - addr: 2
+      pack_num: 2
+  interval: 30
+schema:
+  port: str
+  baudrate: int
+  packs:
+    - addr: int
+      pack_num: int
+  interval: int
