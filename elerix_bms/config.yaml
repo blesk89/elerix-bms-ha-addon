@@ -1,7 +1,8 @@
 name: "Elerix BMS Reader"
 description: "RS485 BMS data reader pro Elerix EX-S5 – FoxESS/PACE protokol, LV5200"
-version: "2.1.0"
+version: "2.2.0"
 slug: "elerix_bms_reader"
+url: "https://github.com/blesk89/elerix-bms-ha-addon"
 init: false
 uart: true
 homeassistant_api: true
@@ -9,8 +10,8 @@ startup: "application"
 boot: "auto"
 arch:
   - aarch64
-map:
-  - "config:ro"
+  - amd64
+  - armv7
 options:
   port: "/dev/ttyUSB0"
   baudrate: 9600

@@ -13,7 +13,7 @@ import urllib.request
 import urllib.error
 
 OPTIONS_FILE = "/data/options.json"
-BMS_SCRIPT   = "/config/scripts/elerix_bms.py"
+BMS_SCRIPT   = "/elerix_bms.py"
 
 with open(OPTIONS_FILE) as f:
     opts = json.load(f)
