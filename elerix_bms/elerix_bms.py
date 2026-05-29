@@ -241,7 +241,7 @@ def parse_running_data(raw: bytes) -> dict:
 
         return result
     except Exception as e:
-        print(f"[DEBUG] parse_running_data error: {e}", file=sys.stderr)
+        print(f"[WARN] parse_running_data error: {e}", file=sys.stderr)
         return {}
 
 
@@ -261,11 +261,9 @@ def query(port: str, baud: int, addr: int, cid2: int,
             time.sleep(0.1)
             ser.reset_input_buffer()
             req = make_request(addr, cid2, ver=ver, pack_num=pack_num)
-            print(f"[DEBUG] TX cid2={hex(cid2)} addr={addr} pack={pn} ver={ver}: {req}", file=sys.stderr, flush=True)
             ser.write(req)
             resp = ser.read_until(b'\r', size=512)
             ser.close()
-            print(f"[DEBUG] RX {len(resp)} bytes", file=sys.stderr, flush=True)
             if not resp:
                 if attempt < retries:
                     print(f"[WARN] no_response attempt {attempt+1}, retrying...", file=sys.stderr, flush=True)
