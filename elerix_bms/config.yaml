@@ -1,6 +1,7 @@
 name: "Elerix BMS Reader"
 description: "RS485 BMS data reader pro Elerix EX-S5 – FoxESS/PACE protokol, LV5200"
 version: "2.3.2"
+changelog: true
 slug: "elerix_bms_reader"
 url: "https://github.com/blesk89/elerix-bms-ha-addon"
 init: false
