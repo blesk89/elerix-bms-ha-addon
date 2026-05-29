@@ -246,27 +246,39 @@ def parse_running_data(raw: bytes) -> dict:
 
 
 def query(port: str, baud: int, addr: int, cid2: int,
-          timeout: float = 3.0, ver: str = "20", parser=None, pack_num: int = None) -> dict:
+          timeout: float = 3.0, ver: str = "20", parser=None, pack_num: int = None,
+          retries: int = 1) -> dict:
     if parser is None:
         parser = parse_cell_sample
-    try:
-        ser = serial.Serial(port, baud, bytesize=8, parity="N",
-                            stopbits=1, timeout=timeout)
-        time.sleep(0.1)
-        ser.reset_input_buffer()
-        req = make_request(addr, cid2, ver=ver, pack_num=pack_num)
-        pn = pack_num if pack_num is not None else addr
-        print(f"[DEBUG] TX cid2={hex(cid2)} addr={addr} pack={pn} ver={ver}: {req}", file=sys.stderr, flush=True)
-        ser.write(req)
-        time.sleep(0.5)
-        resp = ser.read(512)
-        ser.close()
-        print(f"[DEBUG] RX {len(resp)} bytes", file=sys.stderr, flush=True)
-        if not resp:
-            return {"error": "no_response"}
-        return parser(resp)
-    except Exception as e:
-        return {"error": str(e)}
+    pn = pack_num if pack_num is not None else addr
+    for attempt in range(retries + 1):
+        try:
+            # inter_byte_timeout: return as soon as no new byte for 200ms — avoids
+            # waiting the full `timeout` for a frame that ends well before 512 bytes
+            ser = serial.Serial(port, baud, bytesize=8, parity="N",
+                                stopbits=1, timeout=timeout,
+                                inter_byte_timeout=0.2)
+            time.sleep(0.1)
+            ser.reset_input_buffer()
+            req = make_request(addr, cid2, ver=ver, pack_num=pack_num)
+            print(f"[DEBUG] TX cid2={hex(cid2)} addr={addr} pack={pn} ver={ver}: {req}", file=sys.stderr, flush=True)
+            ser.write(req)
+            resp = ser.read_until(b'\r', size=512)
+            ser.close()
+            print(f"[DEBUG] RX {len(resp)} bytes", file=sys.stderr, flush=True)
+            if not resp:
+                if attempt < retries:
+                    print(f"[WARN] no_response attempt {attempt+1}, retrying...", file=sys.stderr, flush=True)
+                    time.sleep(0.5)
+                    continue
+                return {"error": "no_response"}
+            return parser(resp)
+        except Exception as e:
+            if attempt < retries:
+                print(f"[WARN] query error attempt {attempt+1}: {e}, retrying...", file=sys.stderr, flush=True)
+                time.sleep(0.5)
+                continue
+            return {"error": str(e)}
 
 
 def read_battery(port: str, baud: int, addr: int, ver: str = "20", pack_num: int = None) -> dict:
@@ -296,6 +308,11 @@ def read_battery(port: str, baud: int, addr: int, ver: str = "20", pack_num: int
     remain = result.get("remaining_ah", 0)
     if full > 0:
         result["soc_calc_pct"] = round(remain / full * 100, 1)
+
+    # SOH fallback: compute from measured full_capacity vs nominal 100 Ah
+    if "soh_pct" not in result and full > 0:
+        nominal_ah = int(sys.argv[5]) if len(sys.argv) > 5 else 100
+        result["soh_pct"] = round(full / nominal_ah * 100, 1)
 
     result["addr"] = addr
     if pack_num is not None:
