@@ -79,7 +79,7 @@ def post_sensor(entity_id: str, state, attributes: dict) -> None:
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
             resp.read()
-    except urllib.error.URLError as e:
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
         print(f"[WARN] POST {entity_id} failed: {e}", flush=True)
 
 
@@ -179,25 +179,28 @@ def main():
           f"packs={PACKS} interval={INTERVAL}s", flush=True)
 
     while True:
-        all_ok = []
-        for pack in PACKS:
-            addr     = pack["addr"]
-            pack_num = pack.get("pack_num")
-            label    = f"addr={addr}" + (f" pack={pack_num}" if pack_num is not None else "")
-            data = read_bms(addr, pack_num)
-            if "error" in data:
-                print(f"[WARN] {label} error: {data['error']}", flush=True)
-                continue
-            soc  = data.get("soc_pct", "?")
-            volt = data.get("voltage_v") or data.get("pack_volt_v", "?")
-            curr = data.get("current_a", "?")
-            pwr  = data.get("power_w", "?")
-            print(f"[INFO] {label}: SOC={soc}%  V={volt}V  I={curr}A  P={pwr}W", flush=True)
-            post_battery_sensors(data, addr, pack_num)
-            all_ok.append(data)
+        try:
+            all_ok = []
+            for pack in PACKS:
+                addr     = pack["addr"]
+                pack_num = pack.get("pack_num")
+                label    = f"addr={addr}" + (f" pack={pack_num}" if pack_num is not None else "")
+                data = read_bms(addr, pack_num)
+                if "error" in data:
+                    print(f"[WARN] {label} error: {data['error']}", flush=True)
+                    continue
+                soc  = data.get("soc_pct", "?")
+                volt = data.get("voltage_v") or data.get("pack_volt_v", "?")
+                curr = data.get("current_a", "?")
+                pwr  = data.get("power_w", "?")
+                print(f"[INFO] {label}: SOC={soc}%  V={volt}V  I={curr}A  P={pwr}W", flush=True)
+                post_battery_sensors(data, addr, pack_num)
+                all_ok.append(data)
 
-        if len(all_ok) > 1:
-            post_combined_sensors(all_ok)
+            if len(all_ok) > 1:
+                post_combined_sensors(all_ok)
+        except Exception as e:
+            print(f"[ERROR] cycle failed, continuing: {e}", flush=True)
 
         time.sleep(INTERVAL)
 
