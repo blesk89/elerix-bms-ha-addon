@@ -1,3 +1,8 @@
+## 2.3.3
+
+- Oprava pádu daemonu při timeoutu na HA REST API — `TimeoutError`/`OSError` už jsou odchyceny stejně jako `URLError`
+- Přidána pojistka (try/except) kolem hlavního cyklu, aby jedna neočekávaná chyba nezastavila čtení BMS natrvalo
+
 ## 2.3.2
 
 - Odstraněny DEBUG výpisy z logů (TX/RX bajty)
